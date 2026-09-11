@@ -14,16 +14,13 @@ def home():
 
     <body>
         <h1>🎬 CineMatch</h1>
-
         <h2>AI Movie Recommendation System</h2>
 
-        <p>
-            Welcome to CineMatch!
-        </p>
+        <p>Welcome to CineMatch!</p>
 
         <p>
-            Our recommendation engine will suggest movies
-            based on user ratings and viewing preferences.
+            Your intelligent movie recommendation engine
+            using collaborative filtering.
         </p>
     </body>
     </html>
