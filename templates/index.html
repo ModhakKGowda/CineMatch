@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>CineMatch</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+    <div class="container">
+
+        <h1>🎬 CineMatch</h1>
+
+        <h2>AI Movie Recommendation System</h2>
+
+        <p class="description">
+            Discover movies you'll love using
+            Collaborative Filtering.
+        </p>
+
+        <div class="card">
+
+            <h3>Get Your Recommendations</h3>
+
+            <form method="POST">
+
+                <label for="user_id">
+                    Enter your User ID
+                </label>
+
+                <input
+                    type="number"
+                    id="user_id"
+                    name="user_id"
+                    placeholder="Example: 1"
+                    min="1"
+                    required
+                >
+
+                <button type="submit">
+                    Recommend Movies 🎬
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</body>
+
+</html>
