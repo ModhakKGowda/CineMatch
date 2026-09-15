@@ -1,263 +1,51 @@
-"""
-CineMatch Exploratory Data Analysis
-
-Phase 1:
-- Load MovieLens data
-- Basic dataset analysis
-- Rating distribution
-- Movie popularity
-- Long-tail distribution
-- Utility matrix
-- Sparsity
-"""
-
-import os
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+# 1. Load Data
+ratings = pd.read_csv("data/ratings.csv")  # columns: userId, movieId, rating, timestamp
+movies = pd.read_csv("data/movies.csv")   # columns: movieId, title, genres
 
-def load_data():
-    movies = pd.read_csv("data/movies.csv")
-    ratings = pd.read_csv("data/ratings.csv")
+# Merge ratings with movie titles
+df = pd.merge(ratings, movies, on="movieId")
 
-    return movies, ratings
-
-
-def basic_analysis(movies, ratings):
-
-    print("===== DATASET INFORMATION =====")
-
-    print("\nMovies shape:", movies.shape)
-    print("Ratings shape:", ratings.shape)
-
-    print("\nMovies:")
-    print(movies.head())
-
-    print("\nRatings:")
-    print(ratings.head())
-
-    print("\nMissing values:")
-
-    print("Movies:")
-    print(movies.isnull().sum())
-
-    print("\nRatings:")
-    print(ratings.isnull().sum())
-
-    print("\nDuplicate rows:")
-    print("Movies:", movies.duplicated().sum())
-    print("Ratings:", ratings.duplicated().sum())
-
-    print("\nRating statistics:")
-    print(ratings["rating"].describe())
-
-
-def rating_distribution(ratings):
-
-    plt.figure(figsize=(8, 5))
-
-    sns.countplot(
-        data=ratings,
-        x="rating"
-    )
-
-    plt.title("Rating Distribution")
-    plt.xlabel("Rating")
-    plt.ylabel("Number of Ratings")
-
-    plt.tight_layout()
-
-    plt.savefig(
-        "eda_outputs/rating_distribution.png"
-    )
-
-    plt.close()
-
-
-def movie_popularity(movies, ratings):
-
-    movie_rating_counts = (
-        ratings
-        .groupby("movieId")
-        .size()
-        .reset_index(name="rating_count")
-    )
-
-    movie_popularity = (
-        movie_rating_counts
-        .merge(movies, on="movieId")
-        .sort_values(
-            "rating_count",
-            ascending=False
-        )
-    )
-
-    print("\n===== MOST POPULAR MOVIES =====")
-
-    print(
-        movie_popularity[
-            ["movieId", "title", "rating_count"]
-        ].head(10)
-    )
-
-    return movie_popularity
-
-
-def long_tail_distribution(movie_popularity):
-
-    sorted_counts = (
-        movie_popularity["rating_count"]
-        .sort_values(ascending=False)
-        .values
-    )
-
-    plt.figure(figsize=(10, 6))
-
-    plt.plot(sorted_counts)
-
-    plt.title(
-        "Long-Tail Distribution of Movie Popularity"
-    )
-
-    plt.xlabel(
-        "Movies ranked by popularity"
-    )
-
-    plt.ylabel(
-        "Number of ratings"
-    )
-
-    plt.tight_layout()
-
-    plt.savefig(
-        "eda_outputs/long_tail_distribution.png"
-    )
-
-    plt.close()
-
-
-def utility_matrix_analysis(ratings):
-
-    utility_matrix = ratings.pivot_table(
-        index="userId",
-        columns="movieId",
-        values="rating"
-    )
-
-    total_cells = (
-        utility_matrix.shape[0]
-        * utility_matrix.shape[1]
-    )
-
-    number_of_ratings = (
-        utility_matrix.notna()
-        .sum()
-        .sum()
-    )
-
-    missing_cells = (
-        total_cells
-        - number_of_ratings
-    )
-
-    sparsity = (
-        missing_cells
-        / total_cells
-    )
-
-    print("\n===== UTILITY MATRIX =====")
-
-    print(
-        "Utility matrix shape:",
-        utility_matrix.shape
-    )
-
-    print(
-        "Total cells:",
-        total_cells
-    )
-
-    print(
-        "Number of ratings:",
-        int(number_of_ratings)
-    )
-
-    print(
-        "Missing cells:",
-        int(missing_cells)
-    )
-
-    print(
-        "Sparsity:",
-        round(sparsity * 100, 2),
-        "%"
-    )
-
-    sample_matrix = utility_matrix.iloc[:30, :30]
-
-    plt.figure(figsize=(12, 8))
-
-    sns.heatmap(
-        sample_matrix,
-        cmap="viridis",
-        cbar=True
-    )
-
-    plt.title(
-        "User-Movie Utility Matrix"
-    )
-
-    plt.xlabel("Movie ID")
-    plt.ylabel("User ID")
-
-    plt.tight_layout()
-
-    plt.savefig(
-        "eda_outputs/utility_matrix.png"
-    )
-
-    plt.close()
-
+# 2. Sparsity & Utility Matrix Analysis
+def analyze_utility_matrix(df):
+    utility_matrix = df.pivot(index='userId', columns='movieId', values='rating')
+    
+    n_users = utility_matrix.shape[0]
+    n_movies = utility_matrix.shape[1]
+    total_cells = n_users * n_movies
+    rated_cells = df['rating'].count()
+    
+    sparsity = (1 - (rated_cells / total_cells)) * 100
+    
+    print(f"Users: {n_users} | Movies: {n_movies}")
+    print(f"Sparsity Ratio: {sparsity:.2f}%")
     return utility_matrix
 
-
-def main():
-
-    os.makedirs(
-        "eda_outputs",
-        exist_ok=True
-    )
-
-    movies, ratings = load_data()
-
-    basic_analysis(
-        movies,
-        ratings
-    )
-
-    rating_distribution(
-        ratings
-    )
-
-    popularity = movie_popularity(
-        movies,
-        ratings
-    )
-
-    long_tail_distribution(
-        popularity
-    )
-
-    utility_matrix_analysis(
-        ratings
-    )
-
-    print("\n===== EDA COMPLETE =====")
-    print(
-        "Graphs saved in the eda_outputs folder."
-    )
-
+# 3. Visualization Plots
+def plot_eda(df):
+    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+    
+    # Rating Distribution
+    sns.countplot(x='rating', data=df, ax=axes[0], palette='Blues_d')
+    axes[0].set_title('Distribution of User Ratings')
+    axes[0].set_xlabel('Rating')
+    axes[0].set_ylabel('Count')
+    
+    # Long-Tail Distribution (Ratings per Movie)
+    movie_counts = df['movieId'].value_counts().values
+    axes[1].plot(movie_counts, color='firebrick')
+    axes[1].set_title('Long-Tail Distribution: Ratings per Movie')
+    axes[1].set_xlabel('Movie Rank')
+    axes[1].set_ylabel('Number of Ratings')
+    axes[1].set_yscale('log')
+    
+    plt.tight_layout()
+    plt.show()
 
 if __name__ == "__main__":
-    main()
+    matrix = analyze_utility_matrix(df)
+    plot_eda(df)
