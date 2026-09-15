@@ -1,58 +1,44 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>CineMatch</title>
-
-    <link rel="stylesheet"
-          href="{{ url_for('static', filename='style.css') }}">
+    <title>CineMatch - Recommender Engine</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 700px; margin: 40px auto; padding: 0 20px; }
+        .card { border: 1px solid #ddd; padding: 12px; margin-bottom: 8px; border-radius: 6px; }
+        button { padding: 8px 16px; cursor: pointer; background-color: #007bff; color: white; border: none; border-radius: 4px; }
+    </style>
 </head>
-
 <body>
+    <h1>🎬 CineMatch Recommender</h1>
+    <label for="userSelect">Select User ID:</label>
+    <select id="userSelect">
+        {% for u in users %}
+            <option value="{{ u }}">User #{{ u }}</option>
+        {% endfor %}
+    </select>
+    <button onclick="fetchRecommendations()">Get Recommendations</button>
 
-    <div class="container">
+    <h2 style="margin-top: 30px;">Top Recommendations:</h2>
+    <div id="results"><i>Click button to generate recommendations...</i></div>
 
-        <h1>🎬 CineMatch</h1>
+    <script>
+        async function fetchRecommendations() {
+            const userId = document.getElementById('userSelect').value;
+            const container = document.getElementById('results');
+            container.innerHTML = "Loading...";
 
-        <h2>AI Movie Recommendation System</h2>
-
-        <p class="description">
-            Discover movies you'll love using
-            Collaborative Filtering.
-        </p>
-
-        <div class="card">
-
-            <h3>Get Your Recommendations</h3>
-
-            <form method="POST">
-
-                <label for="user_id">
-                    Enter your User ID
-                </label>
-
-                <input
-                    type="number"
-                    id="user_id"
-                    name="user_id"
-                    placeholder="Example: 1"
-                    min="1"
-                    required
-                >
-
-                <button type="submit">
-                    Recommend Movies 🎬
-                </button>
-
-            </form>
-
-        </div>
-
-    </div>
-
+            const res = await fetch(`/api/recommend?user_id=${userId}&top_n=5`);
+            const data = await res.json();
+            
+            container.innerHTML = "";
+            data.recommendations.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'card';
+                div.innerHTML = `<strong>${item.title}</strong> — Predicted Rating: ⭐️ ${item.score}`;
+                container.appendChild(div);
+            });
+        }
+    </script>
 </body>
-
 </html>
