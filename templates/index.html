@@ -2,17 +2,18 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>CineMatch - AI Movie Recommendation System</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CineMatch</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #f8f9fa; color: #333; max-width: 600px; margin: 40px auto; padding: 0 20px; }
         .header { text-align: center; margin-bottom: 24px; }
         .card { background: white; border-radius: 8px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 24px; }
         .form-group { margin-bottom: 16px; }
         label { display: block; margin-bottom: 8px; font-weight: 600; }
-        input[type="number"] { width: 100%; padding: 10px; border: 1px solid #ced4da; border-radius: 6px; box-sizing: border-box; }
-        button { width: 100%; padding: 10px; background-color: #e2e6ea; color: #212529; border: 1px solid #ced4da; border-radius: 6px; font-weight: 600; cursor: pointer; }
+        input[type="number"] { width: 100%; padding: 10px; border: 1px solid #ced4da; border-radius: 6px; box-sizing: border-box; font-size: 16px; }
+        button { width: 100%; padding: 12px; background-color: #e2e6ea; color: #212529; border: 1px solid #ced4da; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 15px; }
         button:hover { background-color: #dae0e5; }
-        .movie-item { background: white; border: 1px solid #e9ecef; border-left: 4px solid #007bff; padding: 12px 16px; margin-bottom: 8px; border-radius: 4px; display: flex; justify-content: space-between; }
+        .movie-card { background: white; border: 1px solid #e9ecef; border-left: 4px solid #007bff; padding: 12px 16px; margin-bottom: 8px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; }
         .score { font-weight: bold; color: #28a745; }
     </style>
 </head>
@@ -26,29 +27,51 @@
 
     <div class="card">
         <h4 style="margin-top: 0; text-align: center;">Get Your Recommendations</h4>
-        
-        <form action="/" method="POST">
-            <div class="form-group">
-                <label for="user_id">Enter your User ID:</label>
-                <input type="number" id="user_id" name="user_id" value="{{ user_id }}" min="1" required>
-            </div>
-            <button type="submit">Recommend Movies 🎬</button>
-        </form>
-    </div>
-
-    {% if recommendations %}
-    <div>
-        <h3>Top Recommendations for User #{{ user_id }}:</h3>
-        {% for item in recommendations %}
-        <div class="movie-item">
-            <span><strong>{{ item.title if item.title else item }}</strong></span>
-            {% if item.score %}
-            <span class="score">⭐️ {{ item.score }}</span>
-            {% endif %}
+        <div class="form-group">
+            <label for="userIdInput">Enter your User ID:</label>
+            <input type="number" id="userIdInput" value="1" min="1" placeholder="Example: 1">
         </div>
-        {% endfor %}
+        <button type="button" onclick="fetchRecommendations()">Recommend Movies 🎬</button>
     </div>
-    {% endif %}
 
+    <div id="resultsContainer" style="display: none;">
+        <h3>Top Recommendations</h3>
+        <div id="results"></div>
+    </div>
+
+    <script>
+        async function fetchRecommendations() {
+            const userId = document.getElementById('userIdInput').value || 1;
+            const container = document.getElementById('results');
+            const resultsContainer = document.getElementById('resultsContainer');
+
+            resultsContainer.style.display = 'block';
+            container.innerHTML = '<p style="color: #6c757d;">Loading recommendations...</p>';
+
+            try {
+                const response = await fetch(`/api/recommend?user_id=${userId}&top_n=5`);
+                const data = await response.json();
+
+                if (!data.success) {
+                    container.innerHTML = `<p style="color: red;">Error: ${data.error}</p>`;
+                    return;
+                }
+
+                container.innerHTML = '';
+                data.recommendations.forEach(item => {
+                    const title = typeof item === 'string' ? item : item.title;
+                    const score = item.score ? `⭐️ ${item.score}` : '';
+                    
+                    const div = document.createElement('div');
+                    div.className = 'movie-card';
+                    div.innerHTML = `<span><strong>${title}</strong></span><span class="score">${score}</span>`;
+                    container.appendChild(div);
+                });
+            } catch (err) {
+                container.innerHTML = '<p style="color: red;">Failed to connect to backend server.</p>';
+                console.error(err);
+            }
+        }
+    </script>
 </body>
 </html>
