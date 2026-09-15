@@ -194,7 +194,6 @@ def utility_matrix_analysis(ratings):
         "%"
     )
 
-    # Display a small portion of the matrix
     sample_matrix = utility_matrix.iloc[:30, :30]
 
     plt.figure(figsize=(12, 8))
@@ -225,7 +224,6 @@ def utility_matrix_analysis(ratings):
 
 def main():
 
-    # Create folder for EDA graphs
     os.makedirs(
         "eda_outputs",
         exist_ok=True
