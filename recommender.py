@@ -1,111 +1,79 @@
 import pandas as pd
 import numpy as np
-from sklearn.metrics.pairwise import cosine_similarity
-from surprise import Dataset, Reader, SVD
+from surprise import Dataset, Reader, SVD, accuracy
 from surprise.model_selection import train_test_split
 
 # =====================================================================
-# DATA LOADING & UTILITY MATRIX SETUP
+# SVD TRAINING & EVALUATION (Deliverable #2)
 # =====================================================================
 
-ratings = pd.read_csv("data/ratings.csv")
-movies = pd.read_csv("data/movies.csv")
-
-utility_matrix = ratings.pivot(index='userId', columns='movieId', values='rating').fillna(0)
-
-# =====================================================================
-# MEMORY-BASED COLLABORATIVE FILTERING (Cosine Similarity)
-# =====================================================================
-
-def compute_cosine_similarity(matrix):
-    """Calculates cosine similarity matrix between users."""
-    # Rows are users, columns are movies
-    user_sim = cosine_similarity(matrix)
-    return pd.DataFrame(user_sim, index=matrix.index, columns=matrix.index)
-
-def recommend_memory_based(user_id, utility_matrix, user_sim_df, top_n=5):
-    """Predicts movies for a user based on top N similar users."""
-    if user_id not in utility_matrix.index:
-        return []
-    
-    # Get similarity scores for target user
-    sim_scores = user_sim_df[user_id].drop(user_id)
-    
-    # Unrated movies for the user
-    user_ratings = utility_matrix.loc[user_id]
-    unrated_movies = user_ratings[user_ratings == 0].index
-    
-    # Weighted average of ratings from top N similar users
-    weighted_ratings = {}
-    for movie in unrated_movies:
-        other_ratings = utility_matrix[movie].drop(user_id)
-        # Filter non-zero ratings
-        rated_by = other_ratings[other_ratings > 0]
-        if not rated_by.empty:
-            weights = sim_scores[rated_by.index]
-            if weights.sum() > 0:
-                weighted_ratings[movie] = np.dot(weights, rated_by) / weights.sum()
-                
-    sorted_movies = sorted(weighted_ratings.items(), key=lambda x: x[1], reverse=True)[:top_n]
-    movie_ids = [m[0] for m in sorted_movies]
-    
-    return movies[movies['movieId'].isin(movie_ids)]['title'].tolist()
-
-# =====================================================================
-# MODEL-BASED COLLABORATIVE FILTERING (SVD Matrix Factorization)
-# =====================================================================
-
-def train_svd():
+def evaluate_and_train_svd(ratings_df):
+    """Evaluates SVD on test split to report RMSE, then builds full model."""
     reader = Reader(rating_scale=(0.5, 5.0))
-    data = Dataset.load_from_df(ratings[['userId', 'movieId', 'rating']], reader)
-    trainset = data.build_full_trainset()
+    data = Dataset.load_from_df(ratings_df[['userId', 'movieId', 'rating']], reader)
     
+    # Train-Test Split for RMSE Evaluation
+    trainset_split, testset_split = train_test_split(data, test_size=0.2, random_state=42)
     model = SVD(n_factors=50, random_state=42)
-    model.fit(trainset)
-    return model
+    model.fit(trainset_split)
+    
+    # Calculate RMSE
+    predictions = model.test(testset_split)
+    rmse = accuracy.rmse(predictions, verbose=False)
+    print(f"SVD Model Test RMSE: {float(rmse):.4f}")
+    
+    # Retrain on full dataset for live recommendations
+    full_trainset = data.build_full_trainset()
+    full_model = SVD(n_factors=50, random_state=42)
+    full_model.fit(full_trainset)
+    
+    return full_model
 
-def recommend_svd(user_id, svd_model, top_n=5):
-    all_movie_ids = movies['movieId'].unique()
-    rated_movie_ids = ratings[ratings['userId'] == user_id]['movieId'].tolist()
+# =====================================================================
+# RECOMMENDATION GENERATOR (Deliverable #3)
+# =====================================================================
+
+def recommend_svd(user_id, svd_model, movies_df, ratings_df, top_n=5):
+    """Returns clean, formatted list of top N movie recommendations."""
+    all_movie_ids = movies_df['movieId'].unique()
+    rated_movie_ids = ratings_df[ratings_df['userId'] == user_id]['movieId'].tolist()
     
     unwatched_ids = [m for m in all_movie_ids if m not in rated_movie_ids]
     
-    predictions = [
-        (movie_id, svd_model.predict(user_id, movie_id).est)
-        for movie_id in unwatched_ids
-    ]
+    # Predict scores and clean numpy scalar types to native floats
+    predictions = []
+    for m_id in unwatched_ids:
+        pred_rating = float(svd_model.predict(user_id, m_id).est)
+        predictions.append((m_id, pred_rating))
     
-    # Sort predictions by estimated rating descending
     predictions.sort(key=lambda x: x[1], reverse=True)
     
-    top_movie_ids = [m[0] for m in predictions[:top_n]]
-    top_movies = movies[movies['movieId'].isin(top_movie_ids)]['title'].tolist()
-    
-    return top_movies
+    # Map back to movie titles
+    results = []
+    for movie_id, score in predictions[:top_n]:
+        title = movies_df[movies_df['movieId'] == movie_id]['title'].values[0]
+        results.append({
+            'movieId': int(movie_id),
+            'title': title,
+            'score': round(score, 2)
+        })
+        
+    return results
 
 # =====================================================================
-# TEST SVD
+# MAIN RUNNER
 # =====================================================================
 
 if __name__ == "__main__":
+    ratings = pd.read_csv("data/ratings.csv")
+    movies = pd.read_csv("data/movies.csv")
 
-    print("\n====== TRAINING SVD MODEL ======")
-
-    svd_model = train_svd()
-
-    print("SVD model trained successfully!")
+    print("\n====== EVALUATING & TRAINING SVD MODEL ======")
+    svd_model = evaluate_and_train_svd(ratings)
 
     user_id = 1
+    print(f"\n====== SVD RECOMMENDATIONS FOR USER {user_id} ======")
+    recommendations = recommend_svd(user_id, svd_model, movies, ratings, top_n=5)
 
-    print(
-        f"\n====== SVD RECOMMENDATIONS FOR USER {user_id} ======"
-    )
-
-    recommendations = recommend_svd(
-        user_id,
-        svd_model,
-        top_n=5
-    )
-
-    for recommendation in recommendations:
-        print(recommendation)
+    for rec in recommendations:
+        print(f"Title: {rec['title']} | Predicted Rating: {rec['score']}")
