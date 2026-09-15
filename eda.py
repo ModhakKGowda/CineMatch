@@ -165,11 +165,29 @@ def utility_matrix
         int(missing_cells)
     )
 
-    print(
+        print(
         "Sparsity:",
         round(sparsity * 100, 2),
         "%"
     )
+
+    # Show a small part of the utility matrix
+    sample_matrix = utility_matrix.iloc[:30, :30]
+
+    plt.figure(figsize=(12, 8))
+
+    sns.heatmap(
+        sample_matrix,
+        cmap="viridis",
+        cbar=True
+    )
+
+    plt.title("User-Movie Utility Matrix")
+    plt.xlabel("Movie ID")
+    plt.ylabel("User ID")
+
+    plt.tight_layout()
+    plt.show()
 
     return utility_matrix
 
