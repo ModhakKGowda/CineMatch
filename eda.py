@@ -116,7 +116,7 @@ def long_tail_distribution(movie_popularity):
     plt.show()
 
 
-def utility_matrix_analysis(ratings):
+def utility_matrix
 
     utility_matrix = ratings.pivot_table(
         index="userId",
