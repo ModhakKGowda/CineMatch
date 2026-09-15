@@ -3,7 +3,7 @@ CineMatch Exploratory Data Analysis
 
 Phase 1:
 - Load MovieLens data
-- Basic data analysis
+- Basic dataset analysis
 - Rating distribution
 - Movie popularity
 - Long-tail distribution
@@ -11,10 +11,10 @@ Phase 1:
 - Sparsity
 """
 
+import os
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-import os
 
 
 def load_data():
@@ -38,6 +38,7 @@ def basic_analysis(movies, ratings):
     print(ratings.head())
 
     print("\nMissing values:")
+
     print("Movies:")
     print(movies.isnull().sum())
 
@@ -66,14 +67,19 @@ def rating_distribution(ratings):
     plt.ylabel("Number of Ratings")
 
     plt.tight_layout()
-    plt.savefig("eda_outputs/rating_distribution.png")
+
+    plt.savefig(
+        "eda_outputs/rating_distribution.png"
+    )
+
     plt.close()
 
 
 def movie_popularity(movies, ratings):
 
     movie_rating_counts = (
-        ratings.groupby("movieId")
+        ratings
+        .groupby("movieId")
         .size()
         .reset_index(name="rating_count")
     )
@@ -110,16 +116,28 @@ def long_tail_distribution(movie_popularity):
 
     plt.plot(sorted_counts)
 
-    plt.title("Long-Tail Distribution of Movie Popularity")
-    plt.xlabel("Movies ranked by popularity")
-    plt.ylabel("Number of ratings")
+    plt.title(
+        "Long-Tail Distribution of Movie Popularity"
+    )
+
+    plt.xlabel(
+        "Movies ranked by popularity"
+    )
+
+    plt.ylabel(
+        "Number of ratings"
+    )
 
     plt.tight_layout()
-    plt.savefig("eda_outputs/long_tail_distribution.png")
+
+    plt.savefig(
+        "eda_outputs/long_tail_distribution.png"
+    )
+
     plt.close()
 
 
-def utility_matrix
+def utility_matrix_analysis(ratings):
 
     utility_matrix = ratings.pivot_table(
         index="userId",
@@ -139,11 +157,13 @@ def utility_matrix
     )
 
     missing_cells = (
-        total_cells - number_of_ratings
+        total_cells
+        - number_of_ratings
     )
 
     sparsity = (
-        missing_cells / total_cells
+        missing_cells
+        / total_cells
     )
 
     print("\n===== UTILITY MATRIX =====")
@@ -168,13 +188,13 @@ def utility_matrix
         int(missing_cells)
     )
 
-        print(
+    print(
         "Sparsity:",
         round(sparsity * 100, 2),
         "%"
     )
 
-    # Show a small part of the utility matrix
+    # Display a small portion of the matrix
     sample_matrix = utility_matrix.iloc[:30, :30]
 
     plt.figure(figsize=(12, 8))
@@ -185,21 +205,32 @@ def utility_matrix
         cbar=True
     )
 
-    plt.title("User-Movie Utility Matrix")
+    plt.title(
+        "User-Movie Utility Matrix"
+    )
+
     plt.xlabel("Movie ID")
     plt.ylabel("User ID")
 
     plt.tight_layout()
-    plt.savefig("eda_outputs/utility_matrix.png")
+
+    plt.savefig(
+        "eda_outputs/utility_matrix.png"
+    )
+
     plt.close()
 
     return utility_matrix
 
 
 def main():
-    
-    os.makedirs("eda_outputs", exist_ok=True)
-    
+
+    # Create folder for EDA graphs
+    os.makedirs(
+        "eda_outputs",
+        exist_ok=True
+    )
+
     movies, ratings = load_data()
 
     basic_analysis(
@@ -222,6 +253,11 @@ def main():
 
     utility_matrix_analysis(
         ratings
+    )
+
+    print("\n===== EDA COMPLETE =====")
+    print(
+        "Graphs saved in the eda_outputs folder."
     )
 
 
