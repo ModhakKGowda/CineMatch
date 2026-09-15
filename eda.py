@@ -14,6 +14,7 @@ Phase 1:
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+import os
 
 
 def load_data():
@@ -65,7 +66,8 @@ def rating_distribution(ratings):
     plt.ylabel("Number of Ratings")
 
     plt.tight_layout()
-    plt.show()
+    plt.savefig("eda_outputs/rating_distribution.png")
+    plt.close()
 
 
 def movie_popularity(movies, ratings):
@@ -113,7 +115,8 @@ def long_tail_distribution(movie_popularity):
     plt.ylabel("Number of ratings")
 
     plt.tight_layout()
-    plt.show()
+    plt.savefig("eda_outputs/long_tail_distribution.png")
+    plt.close()
 
 
 def utility_matrix
@@ -187,13 +190,16 @@ def utility_matrix
     plt.ylabel("User ID")
 
     plt.tight_layout()
-    plt.show()
+    plt.savefig("eda_outputs/utility_matrix.png")
+    plt.close()
 
     return utility_matrix
 
 
 def main():
-
+    
+    os.makedirs("eda_outputs", exist_ok=True)
+    
     movies, ratings = load_data()
 
     basic_analysis(
