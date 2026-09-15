@@ -2,42 +2,138 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>CineMatch - Recommender Engine</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CineMatch - AI Movie Recommendation System</title>
     <style>
-        body { font-family: Arial, sans-serif; max-width: 700px; margin: 40px auto; padding: 0 20px; }
-        .card { border: 1px solid #ddd; padding: 12px; margin-bottom: 8px; border-radius: 6px; }
-        button { padding: 8px 16px; cursor: pointer; background-color: #007bff; color: white; border: none; border-radius: 4px; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+            max-width: 650px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            margin-bottom: 24px;
+        }
+        .form-group {
+            margin-bottom: 16px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        input[type="number"], select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 15px;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #e2e6ea;
+            color: #212529;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: #dae0e5;
+        }
+        .movie-item {
+            background: #ffffff;
+            border: 1px solid #e9ecef;
+            border-left: 4px solid #007bff;
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .score {
+            font-weight: bold;
+            color: #28a745;
+        }
     </style>
 </head>
 <body>
-    <h1>🎬 CineMatch Recommender</h1>
-    <label for="userSelect">Select User ID:</label>
-    <select id="userSelect">
-        {% for u in users %}
-            <option value="{{ u }}">User #{{ u }}</option>
-        {% endfor %}
-    </select>
-    <button onclick="fetchRecommendations()">Get Recommendations</button>
 
-    <h2 style="margin-top: 30px;">Top Recommendations:</h2>
-    <div id="results"><i>Click button to generate recommendations...</i></div>
+    <div class="header">
+        <h1>🎬 CineMatch</h1>
+        <h3>AI Movie Recommendation System</h3>
+        <p style="color: #6c757d;">Discover movies you'll love using Collaborative Filtering.</p>
+    </div>
+
+    <div class="card">
+        <h4 style="margin-top: 0; text-align: center;">Get Your Recommendations</h4>
+        
+        <div class="form-group">
+            <label for="userIdInput">Enter your User ID:</label>
+            <input type="number" id="userIdInput" value="1" min="1" placeholder="Example: 1">
+        </div>
+
+        <button onclick="fetchRecommendations()">Recommend Movies 🎬</button>
+    </div>
+
+    <div id="resultsContainer" style="display: none;">
+        <h3>Top Movie Recommendations</h3>
+        <div id="results"></div>
+    </div>
 
     <script>
         async function fetchRecommendations() {
-            const userId = document.getElementById('userSelect').value;
+            const userId = document.getElementById('userIdInput').value || 1;
             const container = document.getElementById('results');
-            container.innerHTML = "Loading...";
-
-            const res = await fetch(`/api/recommend?user_id=${userId}&top_n=5`);
-            const data = await res.json();
+            const resultsContainer = document.getElementById('resultsContainer');
             
-            container.innerHTML = "";
-            data.recommendations.forEach(item => {
-                const div = document.createElement('div');
-                div.className = 'card';
-                div.innerHTML = `<strong>${item.title}</strong> — Predicted Rating: ⭐️ ${item.score}`;
-                container.appendChild(div);
-            });
+            resultsContainer.style.display = "block";
+            container.innerHTML = "<p style='color: #6c757d;'>Loading recommendations...</p>";
+
+            try {
+                const res = await fetch(`/api/recommend?user_id=${userId}&top_n=5`);
+                const data = await res.json();
+                
+                container.innerHTML = "";
+                
+                if (!data.recommendations || data.recommendations.length === 0) {
+                    container.innerHTML = "<p>No recommendations found for this User ID.</p>";
+                    return;
+                }
+
+                data.recommendations.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'movie-item';
+                    
+                    // Support string titles or structured dict outputs
+                    const title = typeof item === 'string' ? item : item.title;
+                    const score = item.score ? `⭐️ ${item.score}` : '';
+
+                    div.innerHTML = `
+                        <span><strong>${title}</strong></span>
+                        <span class="score">${score}</span>
+                    `;
+                    container.appendChild(div);
+                });
+            } catch (err) {
+                console.error("Error fetching recommendations:", err);
+                container.innerHTML = "<p style='color: red;'>Failed to load recommendations. Make sure Flask app is running.</p>";
+            }
         }
     </script>
 </body>
